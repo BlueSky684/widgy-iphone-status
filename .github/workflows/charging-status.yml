@@ -1,1 +1,46 @@
+name: Charging Status
 
+on:
+  workflow_dispatch:
+    inputs:
+      state:
+        description: "Charging state"
+        required: true
+        type: choice
+        options:
+          - on
+          - off
+
+permissions:
+  contents: write
+
+jobs:
+  update-charging-status:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select charging image
+        shell: bash
+        run: |
+          if [ "${{ inputs.state }}" = "on" ]; then
+            cp charging_bolt.png charging_status.png
+          else
+            cp charging_empty.png charging_status.png
+          fi
+
+      - name: Commit status image if changed
+        shell: bash
+        run: |
+          if git diff --quiet -- charging_status.png; then
+            echo "No change needed"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add charging_status.png
+          git commit -m "Update charging status: ${{ inputs.state }}"
+          git push
